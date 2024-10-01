@@ -46,7 +46,7 @@
             font-size: 20px;
             margin: 10px 0;
         }
-        #monthly-statement {
+        #spending-history {
             display: none; /* Hide by default */
             font-size: 18px;
             text-align: left;
@@ -63,7 +63,7 @@
     <h1>Daily Money Tracker</h1>
     <div>
         <div class="tab" onclick="showTracker()">Money Tracker</div>
-        <div class="tab" onclick="showStatement()">Monthly Statement</div>
+        <div class="tab" onclick="showSpendingHistory()">Spending History</div>
         <div class="tab" onclick="showIncomeExpenses()">Income & Expenses</div>
     </div>
     
@@ -80,15 +80,9 @@
         <div id="message"></div>
     </div>
 
-    <div class="content" id="monthly-statement">
-        <h2>Monthly Statement</h2>
-        <p>This is a summary of your monthly spending.</p>
-        <p><strong>Universal Credit Received:</strong> £300 on the 9th of each month</p>
-        <p><strong>PiP Payment:</strong> £700 every 4 weeks</p>
-        <p><strong>Utility Bills:</strong> £5 per day</p>
-        <p><strong>Food Expenses:</strong> £50 per week</p>
-        <p><strong>Weekend Drinks:</strong> £80 each weekend</p>
-        <p><strong>Total Debt Owed:</strong> £350 (to be paid in installments)</p>
+    <div class="content" id="spending-history">
+        <h2>Spending History</h2>
+        <ul id="history-list"></ul>
     </div>
 
     <div class="content" id="income-expenses" style="display: none;">
@@ -111,6 +105,7 @@
         let spentToday = 0; // Amount spent today
         let carryOver = 0; // Carry over amount to the next day
         let testingMode = false; // Testing mode flag
+        let spendingHistory = []; // Array to hold spending history
 
         function calculateSpending() {
             let dayOfWeek = today.getDay();
@@ -157,6 +152,12 @@
                     document.getElementById('message').innerText = "Amount spent successfully.";
                 }
 
+                // Add to spending history
+                spendingHistory.push({
+                    date: today.toDateString(),
+                    amount: spentToday.toFixed(2)
+                });
+
                 // Move to next day
                 today.setDate(today.getDate() + 1);
                 document.getElementById('spent-input').value = ''; // Reset input
@@ -169,6 +170,12 @@
             let spentAmount = availableAmount * 0.9; // Deduct 10% from available amount
             spentToday = spentAmount; // Assume full allowance is spent
             
+            // Add to spending history
+            spendingHistory.push({
+                date: today.toDateString(),
+                amount: spentToday.toFixed(2)
+            });
+
             // Move to next day
             today.setDate(today.getDate() + 1);
             carryOver = 0; // No carry over if full amount is spent
@@ -190,25 +197,32 @@
 
         function showTracker() {
             document.getElementById('tracker-content').style.display = 'block';
-            document.getElementById('monthly-statement').style.display = 'none';
+            document.getElementById('spending-history').style.display = 'none';
             document.getElementById('income-expenses').style.display = 'none';
             calculateSpending(); // Ensure the tracker updates when shown
         }
 
-        function showStatement() {
+        function showSpendingHistory() {
             document.getElementById('tracker-content').style.display = 'none';
-            document.getElementById('monthly-statement').style.display = 'block';
+            document.getElementById('spending-history').style.display = 'block';
             document.getElementById('income-expenses').style.display = 'none';
+
+            // Display spending history
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = ''; // Clear existing history
+            spendingHistory.forEach(entry => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${entry.date}: £${entry.amount}`;
+                historyList.appendChild(listItem);
+            });
         }
 
         function showIncomeExpenses() {
             document.getElementById('tracker-content').style.display = 'none';
-            document.getElementById('monthly-statement').style.display = 'none';
+            document.getElementById('spending-history').style.display = 'none';
             document.getElementById('income-expenses').style.display = 'block';
         }
 
         // Initialize
         calculateSpending();
     </script>
-</body>
-</html>
