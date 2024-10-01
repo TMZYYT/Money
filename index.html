@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        .tab {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .tab:hover {
+            background-color: #2980b9;
+        }
+        .content {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        #spend-today {
+            font-size: 24px;
+            margin: 20px 0;
+        }
+        #spent-input {
+            width: 100px;
+            padding: 5px;
+        }
+        #message {
+            font-size: 20px;
+            margin: 10px 0;
+        }
+        #spending-history {
+            display: none; /* Hide by default */
+            font-size: 18px;
+            text-align: left;
+            padding: 10px;
+        }
+        #testing-message {
+            font-size: 18px;
+            margin: 10px 0;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Daily Money Tracker</h1>
+    <div>
+        <div class="tab" onclick="showTracker()">Money Tracker</div>
+        <div class="tab" onclick="showSpendingHistory()">Spending History</div>
+        <div class="tab" onclick="showIncomeExpenses()">Income & Expenses</div>
+    </div>
+    
+    <div class="content" id="tracker-content">
+        <h2 id="current-day"></h2>
+        <div id="spend-today">You can spend today: £62.86</div>
+        <div id="testing-message"></div>
+        
+        <input type="number" id="spent-input" placeholder="Amount spent">
+        <button onclick="addSpent()">Submit</button>
+        <button onclick="spendFullAmount()">Spend Full Allowance</button>
+        <button onclick="toggleTestingMode()">Toggle Testing Mode</button>
+        
+        <div id="message"></div>
+    </div>
+
+    <div class="content" id="spending-history">
+        <h2>Spending History</h2>
+        <ul id="history-list"></ul>
+    </div>
+
+    <div class="content" id="income-expenses" style="display: none;">
+        <h2>Income & Expenses</h2>
+        <p><strong>Universal Credit Received:</strong> £300 on the 9th of each month</p>
+        <p><strong>PiP Payment:</strong> £700 every 4 weeks</p>
+        <p><strong>Utility Bills:</strong> £5 per day</p>
+        <p><strong>Food Expenses:</strong> £50 per week</p>
+        <p><strong>Weekend Drinks:</strong> £80 each weekend</p>
+        <p><strong>Total Debt Owed:</strong> £350 (to be paid in installments)</p>
+    </div>
+
+    <script>
+        // Constants
+        const dailyUtilities = 5; // Daily Utilities
+        const weeklyFood = 50; // Weekly Food
+        const weekendBudget = 62.86; // Default weekend spending amount
+        const weekdayBudget = 22.86; // Default weekday spending amount
+        let today = new Date(2024, 9, 1); // Starting date (October 1, 2024)
+        let spentToday = 0; // Amount spent today
+        let carryOver = 0; // Carry over amount to the next day
+        let testingMode = false; // Testing mode flag
+        let spendingHistory = []; // Array to hold spending history
+
+        function calculateSpending() {
+            let dayOfWeek = today.getDay();
+            let availableBalance = 0;
+
+            // Calculate spending based on the day of the week
+            if (dayOfWeek === 5 || dayOfWeek === 6) { // Friday or Saturday
+                availableBalance = weekendBudget + carryOver; // Add carry over for weekends
+            } else {
+                availableBalance = weekdayBudget + carryOver; // Regular calculation for weekdays
+            }
+
+            // Prevent negative available balance
+            if (availableBalance < 0) availableBalance = 0;
+
+            // Deduct 10% for the display
+            let displayAmount = availableBalance * 0.9;
+
+            // Update displayed values
+            document.getElementById('current-day').innerText = today.toDateString();
+            document.getElementById('spend-today').innerText = `You can spend today: £${displayAmount.toFixed(2)}`;
+            return availableBalance; // Return the available balance for calculations
+        }
+
+        function addSpent() {
+            let spentInput = document.getElementById('spent-input').value;
+            let availableBalance = calculateSpending(); // Calculate available balance first
+
+            if (spentInput) {
+                spentToday = parseFloat(spentInput);
+                
+                // Ensure valid spending input
+                if (spentToday < 0) {
+                    document.getElementById('message').innerText = "Please enter a positive amount.";
+                    return;
+                }
+
+                // Calculate carry overs after spending
+                if (spentToday > availableBalance) {
+                    carryOver = 0; // No carry over if overspent
+                    document.getElementById('message').innerText = "You've overspent today!";
+                } else {
+                    carryOver += (availableBalance - spentToday); // Add remaining budget to carry over
+                    document.getElementById('message').innerText = "Amount spent successfully.";
+                }
+
+                // Add to spending history, with testing mode status
+                spendingHistory.push({
+                    date: today.toDateString(),
+                    amount: spentToday.toFixed(2),
+                    isTesting: testingMode ? " (Testing Mode)" : "" // Mark if it was in testing mode
+                });
+
+                // Move to next day
+                today.setDate(today.getDate() + 1);
+                document.getElementById('spent-input').value = ''; // Reset input
+                calculateSpending(); // Recalculate for the new day
+            }
+        }
+
+        function spendFullAmount() {
+            let availableAmount = calculateSpending(); // Get available amount
+            let spentAmount = availableAmount * 0.9; // Deduct 10% from available amount
+            spentToday = spentAmount; // Assume full allowance is spent
+            
+            // Add to spending history, with testing mode status
+            spendingHistory.push({
+                date: today.toDateString(),
+                amount: spentToday.toFixed(2),
+                isTesting: testingMode ? " (Testing Mode)" : "" // Mark if it was in testing mode
+            });
+
+            // Move to next day
+            today.setDate(today.getDate() + 1);
+            carryOver = 0; // No carry over if full amount is spent
+            document.getElementById('message').innerText = `Spent full amount: £${spentAmount.toFixed(2)}`;
+            calculateSpending();
+        }
+
+        function toggleTestingMode() {
+            testingMode = !testingMode;
+            if (testingMode) {
+                document.getElementById('testing-message').innerText = "Testing mode is ON.";
+            } else {
+                // Reset to initial state (not affecting actual spending)
+                today = new Date(2024, 9, 1); // Reset date to original
+                carryOver = 0; // Reset carry over
+                document.getElementById('testing-message').innerText = "Testing mode is OFF.";
+            }
+            calculateSpending(); // Recalculate for the current day
+        }
+
+        function showTracker() {
+            document.getElementById('tracker-content').style.display = 'block';
+            document.getElementById('spending-history').style.display = 'none';
+            document.getElementById('income-expenses').style.display = 'none';
+            calculateSpending(); // Ensure the tracker updates when shown
+        }
+
+        function showSpendingHistory() {
+            document.getElementById('tracker-content').style.display = 'none';
+            document.getElementById('spending-history').style.display = 'block';
+            document.getElementById('income-expenses').style.display = 'none';
+
+            // Display spending history
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = ''; // Clear existing history
+            spendingHistory.forEach(entry => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${entry.date}: £${entry.amount}${entry.isTesting}`;
+                historyList.appendChild(listItem);
+            });
+        }
+
+        function showIncomeExpenses() {
+            document.getElementById('tracker-content').style.display = 'none';
+            document.getElementById('spending-history').style.display = 'none';
+            document.getElementById('income-expenses').style.display = 'block';
+        }
+
+        // Initialize the spending tracker on load
+        window.onload = function() {
+            calculateSpending();
+            document.getElementById('current-day').innerText = today.toDateString();
+        };
+    </script>
+</body>
+</html>
